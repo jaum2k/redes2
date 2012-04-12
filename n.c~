@@ -1,0 +1,263 @@
+#include <stdio.h> 
+#include <stdlib.h> 
+#include <string.h> 
+#include<sys/types.h>
+#include <sys/stat.h> 
+#include <fcntl.h> 
+#include <ctype.h>
+
+#define MAX_NOS			8 //chumbando o valor, sera necessario mudar
+
+#define _GNU_SOURCE
+
+struct Enlaces{
+	int id_src;
+	int id_dst;
+	int mtu;
+};
+
+struct Quantidade { 
+	int nos; 
+	int enlaces; 
+};
+
+struct Noh { 
+	char id[1]; 
+	char ip[15]; 
+	char porta[6]; 
+};
+
+typedef struct { //criada pois se tirar a struct Noh(acima) ta dando pau, precisa resolver isso pra usar somente essa estrutura
+	char id[1]; 
+	char ip[15]; 
+	char porta[6]; 
+}no;
+no vetor_nos[MAX_NOS];
+
+struct Entrada {
+	char nome_arq[25]; 
+	int numero_no; 
+};
+
+
+int no_atual = 0;
+
+struct Entrada entrada_usuario() {
+	
+	struct Entrada ent;
+	
+	printf("Digite o nome do arquivo de Configuracao Inicial (CI)\n");
+	scanf("%s*c", ent.nome_arq);
+	
+	printf("Digite o numero do identificador do no a emular\n");
+	scanf("%d*c",&ent.numero_no);
+	
+	return ent; 
+}
+
+struct Quantidade manipular_arquivo (struct Entrada ent) 
+{ 
+	FILE *fp; 
+	FILE *fp2;
+	FILE *fp3; 
+	struct Quantidade qtd;
+	
+	char str[100]; 
+	int i = 0; 
+	int x; 
+	int count = 0; 
+	qtd.nos = 0; 
+	qtd.enlaces = 0;
+	
+	fp = fopen(ent.nome_arq,"r"); 
+	fp2 = fopen("nos.cnf","w");
+	
+	while (!feof(fp)) { 
+
+		fscanf (fp, "%s\n", str);
+
+		
+		printf("str : %s\n",  str);
+		
+		if(isdigit(str[i]) && i == 0) { 
+			if((str[i] == 49 && count > 1)) 
+			{ 
+				break; 
+			}
+			
+		fprintf(fp2, "%c:",str[i]); 
+		i++; 
+		}
+		
+		if(isdigit(str[i]) && i == 1) { 
+			fprintf(fp2, "%s",str);
+			i++; 
+		}
+		
+		if(isdigit(str[i]) && i == 2) { 
+			fprintf(fp2, "%s",str); 
+			fprintf(fp2, "%c",'\n');
+			qtd.nos ++; i = 0; 
+		} 
+	count ++; 
+	}
+
+
+	fclose(fp2); 
+
+	/*
+	
+	fp3 = fopen("ligacoes.cnf","w");
+	
+	count = 0;
+	while (!feof(fp)) { 
+
+		getdelim(&linha_del, &tamanho, ':', fp);
+
+		printf("@haha %s \n",linha_del);		
+	
+		strncpy(id_no, linha_del, strlen(linha_del) - 1 );
+		id_no[strlen(linha_del)] = '\0';
+
+
+		if(isdigit(str[i]) && count == 0){ 
+			fprintf(fp3,"%c:",str[i]); 
+			i++; 
+			count++; 
+		}
+	
+		if(isdigit(str[i]) && count == 1){ 
+			fprintf(fp3, "%c,",str[i]); 
+			i++; 
+			count++; 
+		}
+	
+		if(isdigit(str[i]) && count == 2) { 
+			fprintf(fp3, "%s",str); 
+			fprintf(fp2,"%c",'\n'); 
+			count = 0; 
+			i=0; 
+			qtd.enlaces++; 
+		} 
+
+		fscanf (fp, "%s\n", str); 
+	}
+	*/
+	fclose(fp);
+
+	return qtd; 
+}
+
+void inserir_valores(struct Quantidade qtd) {
+	struct Noh no[qtd.nos];
+	
+	FILE *fp; 
+	int k=0,l=0; 
+	int j; 
+	//char c; 
+	int i; 
+	int count = 0;
+	size_t tamanho = 100;
+	//char *linha = malloc(tamanho);
+	char *linha_del = malloc(tamanho);//linha delimitada, qndo encontrar ':' , ',' e ';'
+	//char *conteudo_linha[16];
+	char id_no[1] ;
+	char ip_no[8];
+	char porta_no[4];
+	//int j;
+	fp = fopen("nos.cnf","r");
+	//char c;
+	for(i=0; i<qtd.nos; i++)
+
+	{
+		getdelim(&linha_del, &tamanho, ':', fp);
+		strncpy(id_no, linha_del, strlen(linha_del) - 1 );
+		id_no[0] = id_no[strlen(linha_del) - 2];//gambiarra master
+		id_no[1] = '\0';		
+		printf("ID = %s\n", id_no);
+		vetor_nos[no_atual].id[0] = id_no[0];
+		vetor_nos[no_atual].id[1] = '\0';
+		//strcpy(vetor_nos[i].id, id_no);
+		
+		//pegar o ip do nó
+		getdelim(&linha_del, &tamanho, ',', fp);
+		strncpy(ip_no, linha_del, strlen(linha_del) - 1 );
+		ip_no[strlen(linha_del) - 1] = '\0';	
+		printf("IP = %s\n", ip_no);
+		strcpy(vetor_nos[no_atual].ip, ip_no);
+		
+		
+		//pegar a porta do nó
+		getdelim(&linha_del, &tamanho, ';', fp);
+		strncpy(porta_no, linha_del, strlen(linha_del) - 1 );
+		porta_no[strlen(linha_del) - 1] = '\0';		
+		printf("PORTA = %s\n", porta_no);
+		strcpy(vetor_nos[no_atual].porta, porta_no);	
+		
+		printf("Jogando valores na struct\n");
+		printf("Struct ID_NO: %c\n", vetor_nos[no_atual].id[0]);
+		printf("Struct IP : %s\n", vetor_nos[no_atual].ip);
+		printf("Struct PORTA: %s\n\n", vetor_nos[no_atual].porta);
+		
+		no_atual++;
+		
+	}
+
+	if(linha_del)
+		free(linha_del);
+
+	fclose(fp);
+}
+
+void manipular_enlaces()
+{
+	
+	FILE *fp;
+	
+	fp = fopen("t.cnf","r");
+	size_t tamanho = 100;
+	char *linha = malloc(tamanho);
+
+	while(!feof(fp))
+	{
+		getline(&linha, &tamanho, fp);
+		printf("LINE : %s\n",linha);
+		
+		if(linha[0] == 'E' || linha[0] == 'e')
+		{
+
+			printf("LINeeeeeeeeeeeeeeeE : %s\n",linha);
+			
+			if(isdigit(linha[1]))
+			{
+				printf("@sou um digito %c \n",linha[0]);	
+			}
+			
+			//getdelim(&linha_del, &tamanho, ':', fp);
+
+				
+	
+			//strncpy(id_no, linha_del, strlen(linha_del) - 1 );
+		}
+
+	}
+}
+
+
+void main() { 
+	struct Entrada ent;
+	
+	struct Quantidade qtd;
+	
+	ent = entrada_usuario();
+	fflush(stdin);
+	qtd = manipular_arquivo(ent); 
+
+	manipular_enlaces();
+
+	
+	printf("quantidade de nos: %d\n",qtd.nos);
+	printf("quantidade de enlaces: %d\n",qtd.enlaces);
+	fflush(stdin);
+	inserir_valores(qtd);
+}

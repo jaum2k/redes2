@@ -1,0 +1,214 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <ctype.h>
+
+
+struct Quantidade
+{
+	int nos;
+	int enlaces;
+};
+
+struct Noh
+{
+	int id;
+        char ip[15];
+        char porta[6];
+};
+
+struct Entrada
+{
+	char nome_arq[25];
+	int numero_no;
+};
+
+struct Entrada entrada_usuario()
+{
+
+	struct Entrada ent;
+
+	printf("Digite o nome do arquivo de Configuracao Inicial (CI)\n");
+	gets(ent.nome_arq);	
+
+	printf("Digite o numero do identificador do no a emular\n");
+	scanf("%d",&ent.numero_no);
+
+	return ent;
+}
+
+struct Quantidade manipular_arquivo (struct Entrada ent)
+{
+	FILE *fp;
+	FILE *fp2;
+	FILE *fp3;
+	struct Quantidade qtd;
+
+	char str[100];
+	int i = 0;
+	int x;
+	int count = 0;
+	qtd.nos = 0;
+	qtd.enlaces = 0;
+
+	fp = fopen(ent.nome_arq,"r");
+	fp2 = fopen("nos.cnf","w");
+
+	while (!feof(fp))
+	{
+		fscanf (fp, "%s\n", str);
+
+		if(isdigit(str[i]) && i == 0)
+		{	
+			if((str[i] == 49 && count > 1))
+			{
+				break;
+			}
+
+			fprintf(fp2, "%c:",str[i]);
+			i++;
+		}
+
+		if(isdigit(str[i]) && i == 1)
+		{	
+			fprintf(fp2, "%s",str);
+			i++;
+		}
+
+		if(isdigit(str[i]) && i == 2)
+		{	
+			fprintf(fp2, "%s",str);
+			fprintf(fp2, "%c",'\n');
+			qtd.nos ++;	
+			i = 0;
+		}
+		count ++;
+	}	
+
+	fclose(fp2);
+	fp3 = fopen("ligacoes.cnf","w");
+
+	count = 0;
+	while (!feof(fp))
+	{	
+		if(isdigit(str[i]) && count == 0)
+		{
+			fprintf(fp3, "%c:",str[i]);
+			i++;
+			count++;
+		}
+
+		if(((isdigit(str[i]))) && count == 1)
+		{	
+			fprintf(fp3, "%c,",str[i]);
+			i++;
+			count ++;
+		}
+
+		if(isdigit(str[i]) && count == 2)
+		{	
+			fprintf(fp3, "%s",str);
+			fprintf(fp2, "%c",'\n');
+			count = 0;
+			i=0;
+			qtd.enlaces++;
+		}
+	
+		fscanf (fp, "%s\n", str);
+	}	
+
+	fclose(fp);
+	fclose(fp3);
+
+	return qtd;
+}
+
+void inserir_valores(struct Quantidade qtd)
+{
+	struct Noh no[qtd.nos];
+
+	FILE *fp;
+	int k=0,l=0;
+	int j;
+	char c;
+	int i=0;
+	int count = 0;
+
+	fp = fopen("nos.cnf","r");
+
+
+	
+		c = fgetc(fp);
+
+		if(count == 0)
+		{
+			no[i].id = ((int) c - 48);
+			count ++;
+		}	
+
+		else if(count == 1)		
+		{
+			c = fgetc(fp);
+			while(c != ',')
+			{	
+				no[i].ip[k] = c;
+				c = fgetc(fp);
+
+				k++;
+			}
+			k = 0;
+			count ++;
+		}
+		else if (count >= 2)
+		{
+			while(c != ';')
+			{
+				no[i].porta[l] = c;
+				l++;
+				c = fgetc(fp);
+			}
+			l = 0;
+			if(c == ';')
+			{
+				count = 0;
+				i++;
+			
+			}
+		}
+	
+
+	fclose(fp);
+
+		for(i = 1; i <= qtd.nos; i++)
+
+		{
+
+		printf("valor de no[%d].id = %d\n",i, no[i].id);
+	
+		printf("valor de ip[%d] = %s\n",i,no[i].ip);
+
+		printf("valor de porta[%d] = %s\n",i,no[i].porta);
+		}
+	
+}
+
+void main()
+{
+	struct Entrada ent;
+
+	struct Quantidade qtd;
+
+	ent = entrada_usuario();
+
+	qtd = manipular_arquivo(ent);
+	
+	printf("quantidade de nos: %d\n",qtd.nos);
+
+	printf("quantidade de enlaces: %d\n",qtd.enlaces);
+	
+	inserir_valores(qtd);
+
+}

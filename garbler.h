@@ -1,3 +1,5 @@
+#include <unistd.h>
+
 #ifndef _GARBLER_H_
 #define _GARBLER_H_
 int set_garbler(int L,int C,int D);
